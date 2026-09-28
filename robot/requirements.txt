@@ -1,0 +1,6 @@
+robotframework==7.4.2
+robotframework-requests
+paho-mqtt==2.1.0
+robotframework-databaselibrary
+psycopg2-binary
+python-dotenv
