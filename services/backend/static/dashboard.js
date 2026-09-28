@@ -10,7 +10,7 @@ async function loadDevices() {
   for (const device of devices) {
     const row = document.createElement("tr");
     row.innerHTML = `
-      <td>${device.device_id}</td>
+      <td><a href="device-detail.html?device_id=${device.device_id}">${device.device_id}</a></td>
       <td>${device.name}</td>
       <td class="status-${device.status}">${device.status}</td>
     `;
