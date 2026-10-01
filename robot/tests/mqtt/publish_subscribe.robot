@@ -1,6 +1,6 @@
 *** Settings ***
-Library    ../../libraries/MqttLibrary.py    ${MQTT_BROKER_HOST}    ${MQTT_BROKER_PORT}
 Resource    ../../resources/variables.resource
+Library    ../../libraries/MqttLibrary.py    ${MQTT_BROKER_HOST}    ${MQTT_BROKER_PORT}
 Test Setup    Clear Received Messages
 Suite Teardown    Disconnect From Broker
 
