@@ -17,8 +17,9 @@ Temperature Above Threshold Triggers High Temperature Alert
     ${reading}=    Generate Anomaly Reading
     ...    temperature_threshold=${TEMPERATURE_THRESHOLD}    vibration_threshold=${VIBRATION_THRESHOLD}
     ...    anomaly_type=temperature
-    Validate Telemetry Schema    ${reading}
-    Send Telemetry    device_id=${device_id}    temperature=${reading}[temperature]    vibration=${reading}[vibration]
+    ${response}=    Send Telemetry    device_id=${device_id}    temperature=${reading}[temperature]    vibration=${reading}[vibration]
+    Should Be Equal As Integers    ${response.status_code}    201
+    Validate Telemetry Schema    ${response.json()}
     ${alerts}=    GET On Session    api    /alerts    expected_status=any
     ${device_alerts}=    Evaluate    [a for a in $alerts.json() if a['device_id'] == '${device_id}']
     Length Should Be    ${device_alerts}    1
