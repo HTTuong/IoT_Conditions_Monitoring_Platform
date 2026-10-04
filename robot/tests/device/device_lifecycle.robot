@@ -28,3 +28,13 @@ Deactivating A Device Updates Its Status
     Deactivate Device    device_id=${device_id}
     ${response}=    Get Device    device_id=${device_id}
     Should Be Equal    ${response.json()}[status]    inactive
+
+Sending Telemetry For Unregistered Device Returns Not Found
+    [Documentation]
+    ...    Risk: the backend silently accepts telemetry for a device that was never registered,
+    ...    creating orphaned data.
+    ...    Expected: 404, and no telemetry record is created.
+    [Tags]    device
+    ${device_id}=    Generate Device Id
+    ${response}=    Send Telemetry    device_id=${device_id}    temperature=${50.0}    vibration=${2.0}
+    Should Be Equal As Integers    ${response.status_code}    404
