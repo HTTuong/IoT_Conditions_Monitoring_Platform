@@ -38,3 +38,18 @@ Sending Telemetry For Unregistered Device Returns Not Found
     ${device_id}=    Generate Device Id
     ${response}=    Send Telemetry    device_id=${device_id}    temperature=${50.0}    vibration=${2.0}
     Should Be Equal As Integers    ${response.status_code}    404
+
+New Device Status Transitions From Offline To Active After First Telemetry
+    [Documentation]
+    ...    Risk: a newly registered device that has never sent any data shows up as active on
+    ...    the dashboard, misleading an operator into thinking it's online.
+    ...    Expected: status=offline right after registration; transitions to active immediately
+    ...    after the first telemetry reading.
+    [Tags]    device
+    ${device_id}=    Generate Device Id
+    Register Device    device_id=${device_id}
+    ${device}=    Get Device    device_id=${device_id}
+    Should Be Equal    ${device.json()}[status]    offline
+    Send Telemetry    device_id=${device_id}    temperature=${50.0}    vibration=${2.0}
+    ${device_after}=    Get Device    device_id=${device_id}
+    Should Be Equal    ${device_after.json()}[status]    active
