@@ -22,6 +22,11 @@ Deactivate Device
     ${response}=    PATCH On Session    api    /devices/${device_id}/deactivate    expected_status=any
     RETURN    ${response}
 
+Get Telemetry
+    [Arguments]    ${device_id}
+    ${response}=    GET On Session    api    /telemetry/${device_id}    expected_status=any
+    RETURN    ${response}
+
 Send Telemetry
     [Arguments]    ${device_id}    ${temperature}=${50.0}    ${vibration}=${2.0}
     ${body}=    Create Dictionary    device_id=${device_id}    temperature=${temperature}    vibration=${vibration}
