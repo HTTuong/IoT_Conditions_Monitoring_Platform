@@ -48,3 +48,32 @@ Payload With Non Numeric Temperature Is Not Stored
     [Tags]    mqtt    gateway
     ${payload}=    Create Dictionary    device_id=PLACEHOLDER    temperature=hot    vibration=${2.0}
     Invalid Payload Should Not Be Stored    ${payload}
+
+*** Keywords ***
+Register Fresh Device
+    ${device_id}=    Generate Device Id
+    ${response}=    Register Device    device_id=${device_id}
+    Should Be Equal As Integers    ${response.status_code}    201
+    RETURN    ${device_id}
+
+Publish Valid Telemetry
+    [Arguments]    ${device_id}
+    ${reading}=    Generate Normal Reading
+    Set To Dictionary    ${reading}    device_id=${device_id}
+    Publish Message    factory/line1/${device_id}/telemetry    ${reading}
+
+Telemetry Count Should Be
+    [Arguments]    ${device_id}    ${expected}
+    ${response}=    Get Telemetry    ${device_id}
+    Length Should Be    ${response.json()}    ${expected}
+
+Invalid Payload Should Not Be Stored
+    [Arguments]    ${bad_payload}
+    ${device_id}=    Register Fresh Device
+    ${is_dict}=    Evaluate    isinstance($bad_payload, dict)
+    IF    ${is_dict}
+        Set To Dictionary    ${bad_payload}    device_id=${device_id}
+    END
+    Publish Message    factory/line1/${device_id}/telemetry    ${bad_payload}
+    Publish Valid Telemetry    ${device_id}
+    Wait Until Keyword Succeeds    10s    1s    Telemetry Count Should Be    ${device_id}    1
