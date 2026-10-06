@@ -30,3 +30,12 @@ Malformed JSON Payload Is Not Stored And Gateway Keeps Working
     ...    delivered, so exactly one record exists.
     [Tags]    mqtt    gateway
     Invalid Payload Should Not Be Stored    not-json
+
+Payload Missing Temperature Is Not Stored
+    [Documentation]
+    ...    Risk: a reading without a required measurement is stored, leaving incomplete data that
+    ...    breaks anomaly detection and charts.
+    ...    Expected: the incomplete message is discarded; only the valid sentinel is stored.
+    [Tags]    mqtt    gateway
+    ${payload}=    Create Dictionary    device_id=PLACEHOLDER    vibration=${2.0}
+    Invalid Payload Should Not Be Stored    ${payload}
