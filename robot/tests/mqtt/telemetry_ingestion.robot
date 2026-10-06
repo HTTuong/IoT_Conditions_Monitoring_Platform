@@ -1,6 +1,7 @@
 *** Settings ***
 Resource    ../../resources/variables.resource
 Resource    ../../resources/api_keywords.resource
+Library    Collections
 Library    RequestsLibrary
 Library    ../../libraries/MqttLibrary.py    ${MQTT_BROKER_HOST}    ${MQTT_BROKER_PORT}
 Library    ../../libraries/DeviceSimulator.py
