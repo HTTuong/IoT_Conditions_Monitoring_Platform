@@ -39,3 +39,12 @@ Payload Missing Temperature Is Not Stored
     [Tags]    mqtt    gateway
     ${payload}=    Create Dictionary    device_id=PLACEHOLDER    vibration=${2.0}
     Invalid Payload Should Not Be Stored    ${payload}
+
+Payload With Non Numeric Temperature Is Not Stored
+    [Documentation]
+    ...    Risk: a reading with a wrong data type (temperature="hot") is stored or crashes
+    ...    anomaly detection when it compares against the threshold.
+    ...    Expected: the message is discarded; only the valid sentinel is stored.
+    [Tags]    mqtt    gateway
+    ${payload}=    Create Dictionary    device_id=PLACEHOLDER    temperature=hot    vibration=${2.0}
+    Invalid Payload Should Not Be Stored    ${payload}
