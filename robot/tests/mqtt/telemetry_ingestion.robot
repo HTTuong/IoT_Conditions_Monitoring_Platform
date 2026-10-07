@@ -32,14 +32,20 @@ Malformed JSON Payload Is Not Stored And Gateway Keeps Working
     [Tags]    mqtt    gateway
     Invalid Payload Should Not Be Stored    not-json
 
-Payload Missing Temperature Is Not Stored
+Partial Reading Without Temperature Is Accepted And Stored As Null
     [Documentation]
-    ...    Risk: a reading without a required measurement is stored, leaving incomplete data that
-    ...    breaks anomaly detection and charts.
-    ...    Expected: the incomplete message is discarded; only the valid sentinel is stored.
+    ...    Risk: a sensor that reports only some measurements (e.g. vibration only) has its
+    ...    data rejected or corrupted somewhere along the pipeline.
+    ...    Expected: the gateway forwards it and the backend stores it, with temperature null
+    ...    and the reported vibration preserved.
     [Tags]    mqtt    gateway
-    ${payload}=    Create Dictionary    device_id=PLACEHOLDER    vibration=${2.0}
-    Invalid Payload Should Not Be Stored    ${payload}
+    ${device_id}=    Register Fresh Device
+    ${payload}=    Create Dictionary    device_id=${device_id}    vibration=${2.0}
+    Publish Message    factory/line1/${device_id}/telemetry    ${payload}
+    Wait Until Keyword Succeeds    10s    1s    Telemetry Count Should Be    ${device_id}    1
+    ${records}=    Get Telemetry    ${device_id}
+    Should Be Equal As Numbers    ${records.json()}[0][vibration]    2.0
+    Should Be Equal    ${records.json()}[0][temperature]    ${None}
 
 Payload With Non Numeric Temperature Is Not Stored
     [Documentation]
