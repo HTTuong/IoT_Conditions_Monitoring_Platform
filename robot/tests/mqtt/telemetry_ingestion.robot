@@ -68,6 +68,18 @@ Telemetry Count Should Be
     ${response}=    Get Telemetry    ${device_id}
     Length Should Be    ${response.json()}    ${expected}
 
+Publish Sentinel Telemetry
+    [Arguments]    ${device_id}
+    ${reading}=    Generate Normal Reading    temperature=${55.5}
+    Set To Dictionary    ${reading}    device_id=${device_id}
+    Publish Message    factory/line1/${device_id}/telemetry    ${reading}
+
+Sentinel Should Be Stored
+    [Arguments]    ${device_id}
+    ${response}=    Get Telemetry    ${device_id}
+    ${temps}=    Evaluate    [r['temperature'] for r in $response.json()]
+    Should Contain    ${temps}    ${55.5}
+
 Invalid Payload Should Not Be Stored
     [Arguments]    ${bad_payload}
     ${device_id}=    Register Fresh Device
@@ -76,5 +88,6 @@ Invalid Payload Should Not Be Stored
         Set To Dictionary    ${bad_payload}    device_id=${device_id}
     END
     Publish Message    factory/line1/${device_id}/telemetry    ${bad_payload}
-    Publish Valid Telemetry    ${device_id}
-    Wait Until Keyword Succeeds    10s    1s    Telemetry Count Should Be    ${device_id}    1
+    Publish Sentinel Telemetry    ${device_id}
+    Wait Until Keyword Succeeds    10s    1s    Sentinel Should Be Stored    ${device_id}
+    Telemetry Count Should Be    ${device_id}    1
