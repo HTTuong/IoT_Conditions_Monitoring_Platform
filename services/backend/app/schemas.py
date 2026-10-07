@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from datetime import datetime
 from typing import Optional, Literal
 
@@ -37,6 +37,13 @@ class TelemetryCreate(BaseModel):
         if v is not None and (v < 0):
             raise ValueError("vibration cannot be negative")
         return v
+    
+    @model_validator(mode="after")
+    def at_least_one_measurement(self):
+        measurements = (self.temperature, self.vibration, self.battery, self.connectivity)
+        if all(m is None for m in measurements):
+            raise ValueError("at least one measurement is required")
+        return self
 
 class TelemetryResponse(BaseModel):
     id: int
