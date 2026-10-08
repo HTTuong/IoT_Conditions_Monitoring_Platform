@@ -106,3 +106,11 @@ Out Of Range Temperature Is Not Stored
     [Tags]    mqtt    gateway
     ${payload}=    Create Dictionary    device_id=PLACEHOLDER    temperature=${500.0}    vibration=${2.0}
     Invalid Payload Should Not Be Stored    ${payload}
+
+Negative Vibration Is Not Stored
+    [Documentation]
+    ...    Risk: a physically impossible negative vibration value is stored as valid data.
+    ...    Expected: the reading is rejected and not stored.
+    [Tags]    mqtt    gateway
+    ${payload}=    Create Dictionary    device_id=PLACEHOLDER    temperature=${50.0}    vibration=${-1.0}
+    Invalid Payload Should Not Be Stored    ${payload}
