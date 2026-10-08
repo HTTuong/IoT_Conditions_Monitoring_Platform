@@ -138,3 +138,18 @@ Reading From Unregistered Device Is Not Stored
     Wait Until Keyword Succeeds    10s    1s    Sentinel Should Be Stored    ${known_id}
     ${response}=    Get Telemetry    ${unknown_id}
     Should Be Equal As Integers    ${response.status_code}    404
+
+Message On Topic Outside Factory Is Ignored
+    [Documentation]
+    ...    Risk: the gateway processes messages from topics it should not consume, letting
+    ...    unrelated publishers write into the telemetry store.
+    ...    Expected: a reading published outside the factory/ topic tree is ignored; only the
+    ...    sentinel on the correct topic is stored.
+    [Tags]    mqtt    gateway
+    ${device_id}=    Register Fresh Device
+    ${reading}=    Generate Normal Reading    temperature=${60.0}
+    Set To Dictionary    ${reading}    device_id=${device_id}
+    Publish Message    other/line1/${device_id}/telemetry    ${reading}
+    Publish Sentinel Telemetry    ${device_id}
+    Wait Until Keyword Succeeds    10s    1s    Sentinel Should Be Stored    ${device_id}
+    Telemetry Count Should Be    ${device_id}    1
