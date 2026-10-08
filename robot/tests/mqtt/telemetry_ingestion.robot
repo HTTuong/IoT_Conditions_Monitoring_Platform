@@ -114,3 +114,12 @@ Negative Vibration Is Not Stored
     [Tags]    mqtt    gateway
     ${payload}=    Create Dictionary    device_id=PLACEHOLDER    temperature=${50.0}    vibration=${-1.0}
     Invalid Payload Should Not Be Stored    ${payload}
+
+Unknown Connectivity Value Is Not Stored
+    [Documentation]
+    ...    Risk: a value outside the allowed set (good/weak/poor) is stored, breaking any
+    ...    dashboard logic that groups or colors devices by connectivity.
+    ...    Expected: the reading is rejected and not stored.
+    [Tags]    mqtt    gateway
+    ${payload}=    Create Dictionary    device_id=PLACEHOLDER    temperature=${50.0}    connectivity=excellent
+    Invalid Payload Should Not Be Stored    ${payload}
