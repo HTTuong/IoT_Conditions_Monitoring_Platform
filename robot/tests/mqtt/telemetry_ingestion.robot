@@ -56,48 +56,6 @@ Payload With Non Numeric Temperature Is Not Stored
     ${payload}=    Create Dictionary    device_id=PLACEHOLDER    temperature=hot    vibration=${2.0}
     Invalid Payload Should Not Be Stored    ${payload}
 
-*** Keywords ***
-Register Fresh Device
-    ${device_id}=    Generate Device Id
-    ${response}=    Register Device    device_id=${device_id}
-    Should Be Equal As Integers    ${response.status_code}    201
-    RETURN    ${device_id}
-
-Publish Valid Telemetry
-    [Arguments]    ${device_id}
-    ${reading}=    Generate Normal Reading
-    Set To Dictionary    ${reading}    device_id=${device_id}
-    Publish Message    factory/line1/${device_id}/telemetry    ${reading}
-
-Telemetry Count Should Be
-    [Arguments]    ${device_id}    ${expected}
-    ${response}=    Get Telemetry    ${device_id}
-    Length Should Be    ${response.json()}    ${expected}
-
-Publish Sentinel Telemetry
-    [Arguments]    ${device_id}
-    ${reading}=    Generate Normal Reading    temperature=${55.5}
-    Set To Dictionary    ${reading}    device_id=${device_id}
-    Publish Message    factory/line1/${device_id}/telemetry    ${reading}
-
-Sentinel Should Be Stored
-    [Arguments]    ${device_id}
-    ${response}=    Get Telemetry    ${device_id}
-    ${temps}=    Evaluate    [r['temperature'] for r in $response.json()]
-    Should Contain    ${temps}    ${55.5}
-
-Invalid Payload Should Not Be Stored
-    [Arguments]    ${bad_payload}
-    ${device_id}=    Register Fresh Device
-    ${is_dict}=    Evaluate    isinstance($bad_payload, dict)
-    IF    ${is_dict}
-        Set To Dictionary    ${bad_payload}    device_id=${device_id}
-    END
-    Publish Message    factory/line1/${device_id}/telemetry    ${bad_payload}
-    Publish Sentinel Telemetry    ${device_id}
-    Wait Until Keyword Succeeds    10s    1s    Sentinel Should Be Stored    ${device_id}
-    Telemetry Count Should Be    ${device_id}    1
-
 Out Of Range Temperature Is Not Stored
     [Documentation]
     ...    Risk: a faulty sensor reporting an impossible temperature (500 C) is stored and
@@ -172,3 +130,46 @@ Burst Of Readings Is Fully Persisted Exactly Once
     ${stored}=    Evaluate    sorted(r['temperature'] for r in $response.json())
     ${expected}=    Evaluate    [40.0 + i for i in range(10)]
     Should Be Equal    ${stored}    ${expected}
+
+*** Keywords ***
+Register Fresh Device
+    ${device_id}=    Generate Device Id
+    ${response}=    Register Device    device_id=${device_id}
+    Should Be Equal As Integers    ${response.status_code}    201
+    RETURN    ${device_id}
+
+Publish Valid Telemetry
+    [Arguments]    ${device_id}
+    ${reading}=    Generate Normal Reading
+    Set To Dictionary    ${reading}    device_id=${device_id}
+    Publish Message    factory/line1/${device_id}/telemetry    ${reading}
+
+Telemetry Count Should Be
+    [Arguments]    ${device_id}    ${expected}
+    ${response}=    Get Telemetry    ${device_id}
+    Length Should Be    ${response.json()}    ${expected}
+
+Publish Sentinel Telemetry
+    [Arguments]    ${device_id}
+    ${reading}=    Generate Normal Reading    temperature=${55.5}
+    Set To Dictionary    ${reading}    device_id=${device_id}
+    Publish Message    factory/line1/${device_id}/telemetry    ${reading}
+
+Sentinel Should Be Stored
+    [Arguments]    ${device_id}
+    ${response}=    Get Telemetry    ${device_id}
+    ${temps}=    Evaluate    [r['temperature'] for r in $response.json()]
+    Should Contain    ${temps}    ${55.5}
+
+Invalid Payload Should Not Be Stored
+    [Arguments]    ${bad_payload}
+    ${device_id}=    Register Fresh Device
+    ${is_dict}=    Evaluate    isinstance($bad_payload, dict)
+    IF    ${is_dict}
+        Set To Dictionary    ${bad_payload}    device_id=${device_id}
+    END
+    Publish Message    factory/line1/${device_id}/telemetry    ${bad_payload}
+    Publish Sentinel Telemetry    ${device_id}
+    Wait Until Keyword Succeeds    10s    1s    Sentinel Should Be Stored    ${device_id}
+    Telemetry Count Should Be    ${device_id}    1
+
