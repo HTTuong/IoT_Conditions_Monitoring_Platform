@@ -123,3 +123,18 @@ Unknown Connectivity Value Is Not Stored
     [Tags]    mqtt    gateway
     ${payload}=    Create Dictionary    device_id=PLACEHOLDER    temperature=${50.0}    connectivity=excellent
     Invalid Payload Should Not Be Stored    ${payload}
+
+Reading From Unregistered Device Is Not Stored
+    [Documentation]
+    ...    Risk: telemetry from a device nobody registered is accepted, creating orphaned
+    ...    data (or letting an unknown sensor inject readings).
+    ...    Expected: nothing is stored for the unknown device; a registered device's reading
+    ...    published right after still goes through.
+    [Tags]    mqtt    gateway
+    ${unknown_id}=    Generate Device Id
+    ${known_id}=    Register Fresh Device
+    Publish Valid Telemetry    ${unknown_id}
+    Publish Sentinel Telemetry    ${known_id}
+    Wait Until Keyword Succeeds    10s    1s    Sentinel Should Be Stored    ${known_id}
+    ${response}=    Get Telemetry    ${unknown_id}
+    Should Be Equal As Integers    ${response.status_code}    404
