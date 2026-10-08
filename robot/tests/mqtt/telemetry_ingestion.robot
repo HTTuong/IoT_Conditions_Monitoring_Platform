@@ -153,3 +153,22 @@ Message On Topic Outside Factory Is Ignored
     Publish Sentinel Telemetry    ${device_id}
     Wait Until Keyword Succeeds    10s    1s    Sentinel Should Be Stored    ${device_id}
     Telemetry Count Should Be    ${device_id}    1
+
+Burst Of Readings Is Fully Persisted Exactly Once
+    [Documentation]
+    ...    Risk: when a sensor publishes quickly, some readings are lost or duplicated
+    ...    somewhere between the broker, gateway and database.
+    ...    Expected: all 10 readings published in a burst are stored, each exactly once.
+    [Tags]    mqtt    gateway
+    ${device_id}=    Register Fresh Device
+    FOR    ${i}    IN RANGE    10
+        ${temp}=    Evaluate    40.0 + ${i}
+        ${reading}=    Generate Normal Reading    temperature=${temp}
+        Set To Dictionary    ${reading}    device_id=${device_id}
+        Publish Message    factory/line1/${device_id}/telemetry    ${reading}
+    END
+    Wait Until Keyword Succeeds    20s    1s    Telemetry Count Should Be    ${device_id}    10
+    ${response}=    Get Telemetry    ${device_id}
+    ${stored}=    Evaluate    sorted(r['temperature'] for r in $response.json())
+    ${expected}=    Evaluate    [40.0 + i for i in range(10)]
+    Should Be Equal    ${stored}    ${expected}
