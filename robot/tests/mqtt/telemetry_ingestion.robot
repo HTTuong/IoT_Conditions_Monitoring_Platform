@@ -97,3 +97,12 @@ Invalid Payload Should Not Be Stored
     Publish Sentinel Telemetry    ${device_id}
     Wait Until Keyword Succeeds    10s    1s    Sentinel Should Be Stored    ${device_id}
     Telemetry Count Should Be    ${device_id}    1
+
+Out Of Range Temperature Is Not Stored
+    [Documentation]
+    ...    Risk: a faulty sensor reporting an impossible temperature (500 C) is stored and
+    ...    triggers false alerts or distorts charts.
+    ...    Expected: the reading is rejected by the backend validation and not stored.
+    [Tags]    mqtt    gateway
+    ${payload}=    Create Dictionary    device_id=PLACEHOLDER    temperature=${500.0}    vibration=${2.0}
+    Invalid Payload Should Not Be Stored    ${payload}
