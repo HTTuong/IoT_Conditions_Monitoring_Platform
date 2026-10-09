@@ -18,3 +18,4 @@ mosquitto/data/*
 mosquitto/log/*
 !mosquitto/data/.gitkeep
 !mosquitto/log/.gitkeep
+.run/
