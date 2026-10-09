@@ -46,3 +46,8 @@ Get Alerts For Device
     ${response}=    GET On Session    api    /alerts    params=${params}    expected_status=any
     ${alerts}=    Evaluate    [a for a in $response.json() if a['device_id'] == $device_id]
     RETURN    ${alerts}
+
+Telemetry Count Should Be
+    [Arguments]    ${device_id}    ${expected}
+    ${response}=    Get Telemetry    ${device_id}
+    Length Should Be    ${response.json()}    ${expected}

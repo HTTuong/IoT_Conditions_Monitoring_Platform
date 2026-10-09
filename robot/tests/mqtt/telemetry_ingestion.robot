@@ -144,11 +144,6 @@ Publish Valid Telemetry
     Set To Dictionary    ${reading}    device_id=${device_id}
     Publish Message    factory/line1/${device_id}/telemetry    ${reading}
 
-Telemetry Count Should Be
-    [Arguments]    ${device_id}    ${expected}
-    ${response}=    Get Telemetry    ${device_id}
-    Length Should Be    ${response.json()}    ${expected}
-
 Publish Sentinel Telemetry
     [Arguments]    ${device_id}
     ${reading}=    Generate Normal Reading    temperature=${55.5}
