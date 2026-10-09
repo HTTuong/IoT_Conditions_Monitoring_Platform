@@ -1,0 +1,32 @@
+*** Settings ***
+Library    Process
+Library    OperatingSystem
+Library    RequestsLibrary
+Resource    variables.resource
+
+*** Keywords ***
+Start Backend
+    Start Process    ${BACKEND_PYTHON}    -m    uvicorn    app.main:app    --port    8000
+    ...    cwd=${PROJECT_ROOT}/services/backend    alias=backend
+    ...    stdout=${OUTPUT_DIR}/backend.log    stderr=STDOUT
+    Wait Until Keyword Succeeds    30s    1s    Backend Should Be Healthy
+
+Stop Backend
+    Terminate Process    backend    kill=${True}
+
+Backend Should Be Healthy
+    GET On Session    api    /health    expected_status=200
+
+Start Gateway
+    Start Process    ${GATEWAY_PYTHON}    -u    src/gateway.py
+    ...    cwd=${PROJECT_ROOT}/services/gateway    alias=gateway
+    ...    stdout=${OUTPUT_DIR}/gateway.log    stderr=STDOUT
+    Wait Until Keyword Succeeds    15s    1s    Gateway Log Should Contain    Connected to broker
+
+Stop Gateway
+    Terminate Process    gateway    kill=${True}
+
+Gateway Log Should Contain
+    [Arguments]    ${text}
+    ${log}=    Get File    ${OUTPUT_DIR}/gateway.log
+    Should Contain    ${log}    ${text}
