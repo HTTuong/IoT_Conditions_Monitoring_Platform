@@ -18,4 +18,11 @@ mosquitto/data/*
 mosquitto/log/*
 !mosquitto/data/.gitkeep
 !mosquitto/log/.gitkeep
+
+# Runtime logs and Robot Framework output
 .run/
+robot/results/
+robot/output.xml
+robot/log.html
+robot/report.html
+robot/venv/
