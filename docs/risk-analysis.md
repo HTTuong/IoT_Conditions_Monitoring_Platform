@@ -86,3 +86,14 @@ The table below will be filled in with specific risk entries as each Robot Frame
 - **Suggested fix:** acknowledge the MQTT message manually only after the backend returns 201
   (`manual_ack=True`, `client.ack(...)`), or persist the buffer to disk.
 - **Status:** Open. The test stays red on purpose and is excluded from CI gating with `--exclude known-bug` until the fix lands.
+
+
+### R-GW-02: A permanently rejected reading blocks every reading buffered behind it
+
+- **Severity:** High (data loss after any transient outage, plus an endless retry loop)
+- **Found by:** `tests/resilience/poison_message.robot` — "Rejected Reading Must Not Block Valid Readings Buffered Behind It" (tag: `known-bug`)
+- **Scenario:** The backend rejects one reading with 422 (temperature 999). The gateway buffers it. The backend then goes down briefly; a valid reading is buffered behind the rejected one. The backend recovers.
+- **Observed:** 0 of 1 valid readings stored. The gateway retries the rejected reading every 5 s forever.
+- **Root cause:** `forward_to_backend` returns `False` for any non-201 status, so a 4xx (permanent client error) is treated like a connection error (transient). The retry loop only ever looks at the head of the queue, so one permanent failure stalls the whole queue.
+- **Suggested fix:** buffer only transient failures (connection errors, 5xx, timeouts); drop or park 4xx readings in a dead-letter list and log them; cap retries per reading.
+- **Status:** Open. Test stays red on purpose and is excluded from CI gating with `--exclude known-bug`.
