@@ -30,3 +30,16 @@ Gateway Log Should Contain
     [Arguments]    ${text}
     ${log}=    Get File    ${OUTPUT_DIR}/gateway.log
     Should Contain    ${log}    ${text}
+
+Stop Broker
+    ${result}=    Run Process    docker    compose    stop    mosquitto    cwd=${PROJECT_ROOT}
+    Should Be Equal As Integers    ${result.rc}    0    ${result.stderr}
+
+Start Broker
+    ${result}=    Run Process    docker    compose    start    mosquitto    cwd=${PROJECT_ROOT}
+    Should Be Equal As Integers    ${result.rc}    0    ${result.stderr}
+
+Gateway Connection Count
+    ${log}=    Get File    ${OUTPUT_DIR}/gateway.log
+    ${count}=    Get Count    ${log}    Connected to broker
+    RETURN    ${count}
