@@ -15,6 +15,12 @@ Stop Backend
     Terminate Process    backend    kill=${True}
 
 Backend Should Be Healthy
+    ${running}=    Is Process Running    backend
+    IF    not ${running}
+        ${log}=    Get File    ${OUTPUT_DIR}/backend.log
+        ${tail}=    Evaluate    "\\n".join($log.splitlines()[-20:])
+        Fatal Error    Backend process exited during startup. Last log lines:\n${tail}
+    END
     GET On Session    api    /health    expected_status=200
 
 Start Gateway
