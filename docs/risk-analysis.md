@@ -75,3 +75,14 @@ The table below will be filled in with specific risk entries as each Robot Frame
 | Anomaly / Alert | Not yet automated | TBD |
 | Security | Not yet automated | TBD |
 | Data integrity | Not yet automated | TBD |
+
+### R-GW-01: Readings buffered in the gateway are lost if the gateway crashes
+
+- **Severity:** High (silent data loss, no alert)
+- **Found by:** `tests/resilience/gateway_outage.robot` — "Gateway Crash With Buffered Readings Must Not Lose Them" (tag: `known-bug`)
+- **Scenario:** The backend is down, the gateway buffers 3 readings in its in-memory `deque`, then the gateway process dies and is restarted after the backend is back.
+- **Observed:** 0 of 3 readings are stored.
+- **Root cause:** `gateway.py` accepts the MQTT message (paho acknowledges QoS 1 as soon as `on_message` returns) before the backend has accepted the reading. The broker therefore considers it delivered, and the only remaining copy is in process memory.
+- **Suggested fix:** acknowledge the MQTT message manually only after the backend returns 201
+  (`manual_ack=True`, `client.ack(...)`), or persist the buffer to disk.
+- **Status:** Open. The test stays red on purpose and is excluded from CI gating with `--exclude known-bug` until the fix lands.
