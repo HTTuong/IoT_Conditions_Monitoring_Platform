@@ -97,3 +97,21 @@ The table below will be filled in with specific risk entries as each Robot Frame
 - **Root cause:** `forward_to_backend` returns `False` for any non-201 status, so a 4xx (permanent client error) is treated like a connection error (transient). The retry loop only ever looks at the head of the queue, so one permanent failure stalls the whole queue.
 - **Suggested fix:** buffer only transient failures (connection errors, 5xx, timeouts); drop or park 4xx readings in a dead-letter list and log them; cap retries per reading.
 - **Status:** Open. Test stays red on purpose and is excluded from CI gating with `--exclude known-bug`.
+
+
+### R-GW-03: A hung backend kills the gateway's MQTT thread (silent zombie gateway)
+
+- **Severity:** Critical (all ingestion stops, no error surfaced, process still looks healthy)
+- **Found by:** `tests/resilience/backend_hang.robot` — "Gateway Survives A Hung Backend And Delivers After It Recovers" (tag: `known-bug`)
+- **Scenario:** The backend accepts the TCP connection but does not answer (frozen process, overloaded, deadlocked). Simulated with SIGSTOP.
+- **Observed:** `requests.exceptions.ReadTimeout` is raised inside `on_message`; the paho network thread (`paho-mqtt-client-gateway-1`) terminates. The gateway process stays alive but no longer consumes MQTT messages and never reconnects.
+- **Root cause:** `forward_to_backend` only catches `requests.exceptions.ConnectionError`. A read timeout is a different exception, and an uncaught exception in a paho callback ends its thread.
+- **Suggested fix:** catch `requests.exceptions.RequestException` (timeouts included) and treat it as transient; wrap `on_message` so no exception can escape; add a liveness signal (health endpoint or heartbeat) so a zombie gateway is detectable.
+- **Status:** Open. Test stays red on purpose and is excluded from CI gating with `--exclude known-bug`.
+
+### R-GW-04: The gateway buffer is unbounded
+
+- **Severity:** Medium (memory exhaustion during a long backend outage)
+- **Found by:** code review of `gateway.py` (`buffer = deque()` has no `maxlen`); no test yet, because the intended policy is a design decision.
+- **Suggested fix:** cap the buffer; decide whether to drop the oldest or newest reading when full, log every drop, and expose the queue size as a metric.
+- **Status:** Open, needs a policy decision before a test can assert it.
