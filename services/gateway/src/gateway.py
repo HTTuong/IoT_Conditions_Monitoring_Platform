@@ -61,7 +61,12 @@ def on_message(client, userdata, msg):
             client.ack(msg.mid, msg.qos)
             return
 
-        result = forward_to_backend(reading)
+        if buffer:
+            # Keep FIFO: a new reading must never overtake readings that are still queued.
+            result = RETRY
+        else:
+            result = forward_to_backend(reading)
+
         if result == RETRY:
             buffer.append((reading, msg.mid, msg.qos))
             print(
@@ -78,7 +83,13 @@ def on_message(client, userdata, msg):
 def retry_buffered_messages():
     while buffer:
         reading, mid, qos = buffer[0]
-        result = forward_to_backend(reading)
+        
+        if buffer:
+            # Keep FIFO: a new reading must never overtake readings that are still queued.
+            result = RETRY
+        else:
+            result = forward_to_backend(reading)
+        
         if result == RETRY:
             break
         buffer.popleft()
