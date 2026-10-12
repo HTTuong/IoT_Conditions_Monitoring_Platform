@@ -46,6 +46,18 @@ Anomaly After Recovery Creates A New Alert
     Length Should Be    ${resolved}    1
     Should Not Be Equal As Integers    ${active}[0][id]    ${resolved}[0][id]
 
+Temperature And Vibration Alerts Are Independent
+    [Documentation]
+    ...    Risk: resolving one metric closes (or hides) the alert of another metric, so a still-failing
+    ...    sensor looks healthy.
+    ...    Expected: each alert type opens and closes on its own.
+    [Tags]    anomaly_alert
+    ${device_id}=    Register Fresh Device
+    Send Reading    ${device_id}    ${95.0}    ${9.0}
+    Active Alert Types Should Be    ${device_id}    high_temperature    high_vibration
+    Send Reading    ${device_id}    ${50.0}    ${9.0}
+    Active Alert Types Should Be    ${device_id}    high_vibration
+
 *** Keywords ***
 Send Reading
     [Arguments]    ${device_id}    ${temperature}    ${vibration}
