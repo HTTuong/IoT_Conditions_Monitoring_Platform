@@ -30,6 +30,22 @@ Normal Reading After A Spike Resolves The Alert
     Active Alert Types Should Be    ${device_id}
     Resolved Alert Count Should Be    ${device_id}    1
 
+Anomaly After Recovery Creates A New Alert
+    [Documentation]
+    ...    Risk: once an alert has been resolved, the same fault returning is silently ignored
+    ...    (the old resolved alert is mistaken for an open one).
+    ...    Expected: a new, separate alert is created; the earlier one stays resolved.
+    [Tags]    anomaly_alert
+    ${device_id}=    Register Fresh Device
+    Send Reading    ${device_id}    ${95.0}    ${2.0}
+    Send Reading    ${device_id}    ${50.0}    ${2.0}
+    Send Reading    ${device_id}    ${96.0}    ${2.0}
+    ${active}=    Get Alerts For Device    ${device_id}    ${False}
+    ${resolved}=    Get Alerts For Device    ${device_id}    ${True}
+    Length Should Be    ${active}    1
+    Length Should Be    ${resolved}    1
+    Should Not Be Equal As Integers    ${active}[0][id]    ${resolved}[0][id]
+
 *** Keywords ***
 Send Reading
     [Arguments]    ${device_id}    ${temperature}    ${vibration}
