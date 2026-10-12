@@ -69,6 +69,22 @@ Reading Without A Measurement Does Not Resolve Its Alert
     Send Vibration Only    ${device_id}    ${2.0}
     Active Alert Types Should Be    ${device_id}    high_temperature
 
+Alerts Are Isolated Per Device
+    [Documentation]
+    ...    Risk: raising or resolving an alert for one device affects another device's alerts
+    ...    (missing device filter), hiding a real fault on the other machine.
+    ...    Expected: alerts are scoped by device.
+    [Tags]    anomaly_alert
+    ${device_a}=    Register Fresh Device
+    ${device_b}=    Register Fresh Device
+    Send Reading    ${device_a}    ${95.0}    ${2.0}
+    Send Reading    ${device_b}    ${50.0}    ${2.0}
+    Active Alert Types Should Be    ${device_b}
+    Send Reading    ${device_b}    ${95.0}    ${2.0}
+    Send Reading    ${device_b}    ${50.0}    ${2.0}
+    Active Alert Types Should Be    ${device_a}    high_temperature
+    Active Alert Types Should Be    ${device_b}
+
 *** Keywords ***
 Send Reading
     [Arguments]    ${device_id}    ${temperature}    ${vibration}
