@@ -58,6 +58,17 @@ Temperature And Vibration Alerts Are Independent
     Send Reading    ${device_id}    ${50.0}    ${9.0}
     Active Alert Types Should Be    ${device_id}    high_vibration
 
+Reading Without A Measurement Does Not Resolve Its Alert
+    [Documentation]
+    ...    Risk: a reading that simply omits the temperature is treated as "temperature is fine" and
+    ...    closes a real overheating alert.
+    ...    Expected: only an actual normal value closes an alert; a missing value leaves it open.
+    [Tags]    anomaly_alert
+    ${device_id}=    Register Fresh Device
+    Send Reading    ${device_id}    ${95.0}    ${2.0}
+    Send Vibration Only    ${device_id}    ${2.0}
+    Active Alert Types Should Be    ${device_id}    high_temperature
+
 *** Keywords ***
 Send Reading
     [Arguments]    ${device_id}    ${temperature}    ${vibration}
