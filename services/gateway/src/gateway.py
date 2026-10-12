@@ -83,13 +83,7 @@ def on_message(client, userdata, msg):
 def retry_buffered_messages():
     while buffer:
         reading, mid, qos = buffer[0]
-        
-        if buffer:
-            # Keep FIFO: a new reading must never overtake readings that are still queued.
-            result = RETRY
-        else:
-            result = forward_to_backend(reading)
-        
+        result = forward_to_backend(reading)
         if result == RETRY:
             break
         buffer.popleft()
