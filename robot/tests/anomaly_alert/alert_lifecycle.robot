@@ -17,6 +17,19 @@ Repeated Anomalies Create Only One Active Alert
     END
     Active Alert Types Should Be    ${device_id}    high_temperature
 
+Normal Reading After A Spike Resolves The Alert
+    [Documentation]
+    ...    Risk: an alert is never closed after the machine recovers, so the dashboard shows a fault
+    ...    that no longer exists.
+    ...    Expected: the first normal reading closes the alert; it moves from active to resolved.
+    [Tags]    anomaly_alert
+    ${device_id}=    Register Fresh Device
+    Send Reading    ${device_id}    ${95.0}    ${2.0}
+    Active Alert Types Should Be    ${device_id}    high_temperature
+    Send Reading    ${device_id}    ${50.0}    ${2.0}
+    Active Alert Types Should Be    ${device_id}
+    Resolved Alert Count Should Be    ${device_id}    1
+
 *** Keywords ***
 Send Reading
     [Arguments]    ${device_id}    ${temperature}    ${vibration}
