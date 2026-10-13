@@ -71,6 +71,15 @@ Script In Device Name Does Not Execute
     Sleep    1s    # a negative check needs a short, bounded wait for the script to have its chance
     Get Title    !=    XSS-EXECUTED
 
+Device Detail Page Shows Device Id From The URL As Text
+    [Documentation]
+    ...    Control for the second page: it takes the id from the query string and writes it with
+    ...    textContent, which is safe.
+    ...    Expected: markup in the URL is displayed literally, never parsed.
+    [Tags]    security    xss    control
+    ${marker}=    Evaluate    uuid.uuid4().hex[:8]    modules=uuid
+    New Page    ${DASHBOARD_URL}device-detail.html?device_id=%3Cb%3E${marker}%3C%2Fb%3E
+    Get Text    id=device-title    ==    Device: <b>${marker}</b>
 
 *** Keywords ***
 Start Suite
