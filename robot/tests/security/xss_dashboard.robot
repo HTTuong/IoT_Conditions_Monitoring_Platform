@@ -40,6 +40,22 @@ Markup In Device Name Is Displayed As Text, Not Parsed
     New Page    ${DASHBOARD_URL}
     Get Text    ${DEVICES_ROW}:has-text("${device_id}") td:nth-child(2)    ==    ${name}
 
+Markup In Device Id Is Displayed As Text, Not Parsed
+    [Documentation]
+    ...    Risk: the device id is written into both a link and a table cell without escaping, so
+    ...    markup in the id breaks out of the link and is parsed as HTML.
+    ...    Expected: either the API refuses such an id, or the Device ID cell shows it literally.
+    [Tags]    security    xss
+    ${marker}=    Evaluate    uuid.uuid4().hex[:8]    modules=uuid
+    ${device_id}=    Set Variable    <b>${marker}</b>
+    ${response}=    Register Device    device_id=${device_id}    name=Security test
+    IF    ${response.status_code} == 422
+        Pass Execution    The API rejects markup in device_id, so it can never be rendered.
+    END
+    Should Be Equal As Integers    ${response.status_code}    201
+    New Page    ${DASHBOARD_URL}
+    Get Text    ${DEVICES_ROW}:has-text("${marker}") td:nth-child(1)    ==    ${device_id}
+
 *** Keywords ***
 Start Suite
     Create API Session
