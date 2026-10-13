@@ -26,6 +26,20 @@ Plain Device Name Is Displayed As Entered
     New Page    ${DASHBOARD_URL}
     Get Text    ${DEVICES_ROW}:has-text("${device_id}") td:nth-child(2)    ==    ${device_id}
 
+Markup In Device Name Is Displayed As Text, Not Parsed
+    [Documentation]
+    ...    Risk: a device name containing HTML is parsed by the browser, so the page shows (and can
+    ...    be altered by) attacker-controlled markup.
+    ...    Expected: the Name cell shows the literal characters that were registered.
+    [Tags]    security    xss
+    ${device_id}=    Generate Device Id
+    ${marker}=    Evaluate    uuid.uuid4().hex[:8]    modules=uuid
+    ${name}=    Set Variable    <b>${marker}</b>
+    ${response}=    Register Device    device_id=${device_id}    name=${name}
+    Should Be Equal As Integers    ${response.status_code}    201
+    New Page    ${DASHBOARD_URL}
+    Get Text    ${DEVICES_ROW}:has-text("${device_id}") td:nth-child(2)    ==    ${name}
+
 *** Keywords ***
 Start Suite
     Create API Session
