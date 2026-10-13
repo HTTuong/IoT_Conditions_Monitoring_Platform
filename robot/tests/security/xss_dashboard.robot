@@ -56,6 +56,22 @@ Markup In Device Id Is Displayed As Text, Not Parsed
     New Page    ${DASHBOARD_URL}
     Get Text    ${DEVICES_ROW}:has-text("${marker}") td:nth-child(1)    ==    ${device_id}
 
+Script In Device Name Does Not Execute
+    [Documentation]
+    ...    Risk: an <img onerror=...> payload in a device name executes JavaScript in the browser of
+    ...    every operator who opens the dashboard (stored XSS).
+    ...    Expected: the payload never runs. The payload would set the page title to XSS-EXECUTED.
+    [Tags]    security    xss
+    ${device_id}=    Generate Device Id
+    ${payload}=    Set Variable    <img src=x onerror="document.title='XSS-EXECUTED'">
+    ${response}=    Register Device    device_id=${device_id}    name=${payload}
+    Should Be Equal As Integers    ${response.status_code}    201
+    New Page    ${DASHBOARD_URL}
+    Wait For Elements State    ${DEVICES_ROW}:has-text("${device_id}")    attached
+    Sleep    1s    # a negative check needs a short, bounded wait for the script to have its chance
+    Get Title    !=    XSS-EXECUTED
+
+
 *** Keywords ***
 Start Suite
     Create API Session
