@@ -1,5 +1,13 @@
 const API_BASE = "http://localhost:8000";
 
+// Cells are filled with textContent, so data is never parsed as HTML.
+function addCell(row, text, className) {
+  const cell = document.createElement("td");
+  cell.textContent = text;
+  if (className) cell.className = className;
+  row.appendChild(cell);
+}
+
 async function loadDevices() {
   const response = await fetch(`${API_BASE}/devices`);
   const devices = await response.json();
@@ -9,11 +17,16 @@ async function loadDevices() {
 
   for (const device of devices) {
     const row = document.createElement("tr");
-    row.innerHTML = `
-      <td><a href="device-detail.html?device_id=${device.device_id}">${device.device_id}</a></td>
-      <td>${device.name}</td>
-      <td class="status-${device.status}">${device.status}</td>
-    `;
+
+    const idCell = document.createElement("td");
+    const link = document.createElement("a");
+    link.href = `device-detail.html?device_id=${encodeURIComponent(device.device_id)}`;
+    link.textContent = device.device_id;
+    idCell.appendChild(link);
+    row.appendChild(idCell);
+
+    addCell(row, device.name);
+    addCell(row, device.status, `status-${device.status}`);
     tbody.appendChild(row);
   }
 }
@@ -28,12 +41,10 @@ async function loadAlerts() {
   for (const alert of alerts) {
     const row = document.createElement("tr");
     row.className = "alert-row";
-    row.innerHTML = `
-      <td>${alert.device_id}</td>
-      <td>${alert.alert_type}</td>
-      <td>${alert.message}</td>
-      <td>${new Date(alert.created_at).toLocaleTimeString()}</td>
-    `;
+    addCell(row, alert.device_id);
+    addCell(row, alert.alert_type);
+    addCell(row, alert.message);
+    addCell(row, new Date(alert.created_at).toLocaleTimeString());
     tbody.appendChild(row);
   }
 }

@@ -5,8 +5,14 @@ const deviceId = params.get("device_id");
 
 document.getElementById("device-title").textContent = `Device: ${deviceId}`;
 
+function addCell(row, text) {
+  const cell = document.createElement("td");
+  cell.textContent = text;
+  row.appendChild(cell);
+}
+
 async function loadTelemetryHistory() {
-  const response = await fetch(`${API_BASE}/telemetry/${deviceId}`);
+  const response = await fetch(`${API_BASE}/telemetry/${encodeURIComponent(deviceId)}`);
   const readings = await response.json();
 
   const tbody = document.querySelector("#telemetry-table tbody");
@@ -19,13 +25,11 @@ async function loadTelemetryHistory() {
 
     const row = document.createElement("tr");
     if (isAnomaly) row.className = "anomaly";
-    row.innerHTML = `
-      <td>${new Date(reading.timestamp).toLocaleTimeString()}</td>
-      <td>${reading.temperature ?? "-"}</td>
-      <td>${reading.vibration ?? "-"}</td>
-      <td>${reading.battery ?? "-"}</td>
-      <td>${reading.connectivity ?? "-"}</td>
-    `;
+    addCell(row, new Date(reading.timestamp).toLocaleTimeString());
+    addCell(row, reading.temperature ?? "-");
+    addCell(row, reading.vibration ?? "-");
+    addCell(row, reading.battery ?? "-");
+    addCell(row, reading.connectivity ?? "-");
     tbody.appendChild(row);
   }
 }
@@ -40,12 +44,10 @@ async function loadDeviceAlerts() {
 
   for (const alert of deviceAlerts) {
     const row = document.createElement("tr");
-    row.innerHTML = `
-      <td>${alert.alert_type}</td>
-      <td>${alert.message}</td>
-      <td>${alert.resolved ? "Yes" : "No"}</td>
-      <td>${new Date(alert.created_at).toLocaleTimeString()}</td>
-    `;
+    addCell(row, alert.alert_type);
+    addCell(row, alert.message);
+    addCell(row, alert.resolved ? "Yes" : "No");
+    addCell(row, new Date(alert.created_at).toLocaleTimeString());
     tbody.appendChild(row);
   }
 }
