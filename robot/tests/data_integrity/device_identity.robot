@@ -35,6 +35,22 @@ Padded Device Id Is Rejected Or Trimmed
     0    1
     2    2
 
+Concurrent Registrations Of The Same Id Yield Exactly One Device
+    [Documentation]
+    ...    Risk: registration is check-then-insert, so simultaneous requests for one id can hit the
+    ...    unique constraint and surface as 500 instead of 409.
+    ...    Expected: across 5 rounds of 10 simultaneous requests, exactly one 201 per round, the rest
+    ...    409, and never a 5xx.
+    [Tags]    data_integrity    concurrency
+    FOR    ${round}    IN RANGE    5
+        ${token}=    Evaluate    uuid.uuid4().hex[:10]    modules=uuid
+        ${codes}=    Register Concurrently    ${API_BASE_URL}    race-${token}    10
+        ${created}=    Evaluate    $codes.count(201)
+        ${unexpected}=    Evaluate    [c for c in $codes if c not in (201, 409)]
+        Should Be Empty    ${unexpected}    Round ${round}: unexpected status codes ${codes}
+        Should Be Equal As Integers    ${created}    1    Round ${round}: ${codes}
+    END
+
 *** Keywords ***
 Padded Id Is Rejected Or Trimmed
     [Arguments]    ${lead}    ${trail}
