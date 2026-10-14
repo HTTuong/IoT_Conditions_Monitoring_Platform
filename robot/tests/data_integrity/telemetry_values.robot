@@ -17,6 +17,21 @@ Out Of Range Battery Is Rejected
     battery    101
     battery    -1
 
+Non-Finite Numbers Are Rejected
+    [Documentation]
+    ...    Risk: NaN and Infinity pass the range checks (every comparison with NaN is False),
+    ...    get committed, and then make the response serializer fail, so the device's history
+    ...    endpoint returns 500 forever.
+    ...    Expected: 422, and no telemetry record is created.
+    [Tags]    data_integrity    validation
+    [Template]    Reading With Field Is Rejected
+    temperature    NaN
+    vibration      NaN
+    battery        NaN
+    temperature    Infinity
+    vibration      Infinity
+    battery        Infinity
+
 *** Keywords ***
 Post Raw Reading
     [Arguments]    ${device_id}    ${field}    ${value}
