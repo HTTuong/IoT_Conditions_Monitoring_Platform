@@ -38,6 +38,23 @@ Reading Without Temperature Does Not Clear An Open Alert
     ${types}=    Active Alert Types Of Device    ${device_id}
     Should Contain    ${types}    high_temperature
 
+Telemetry Timestamp Carries A Timezone And Is Current
+    [Documentation]
+    ...    Risk: timestamps serialized without a UTC marker are read as local time by browsers,
+    ...    so the dashboard shows readings hours off from reality (3h in Finland).
+    ...    Expected: the timestamp has an explicit offset and is within 60 s of now (UTC).
+    [Tags]    data_integrity    time
+    ${device_id}=    Register Fresh Device
+    ${body}=    Create Dictionary    device_id=${device_id}    battery=${80.0}
+    POST On Session    api    /telemetry    json=${body}
+    ${records}=    Get Telemetry    ${device_id}
+    ${ts}=    Evaluate    $records.json()[0]['timestamp']
+    ${parsed}=    Evaluate    datetime.datetime.fromisoformat($ts.replace('Z', '+00:00'))    modules=datetime
+    ${aware}=    Evaluate    $parsed.tzinfo is not None
+    Should Be True    ${aware}    Timestamp '${ts}' has no timezone offset
+    ${skew}=    Evaluate    abs((datetime.datetime.now(datetime.timezone.utc) - $parsed).total_seconds())    modules=datetime
+    Should Be True    ${skew} < 60    Timestamp '${ts}' is ${skew}s away from now
+
 
 *** Keywords ***
 Active Alert Types Of Device
