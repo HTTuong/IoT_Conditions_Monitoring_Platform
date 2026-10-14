@@ -32,6 +32,22 @@ Non-Finite Numbers Are Rejected
     vibration      Infinity
     battery        Infinity
 
+Valid Boundary Values Are Accepted And Stored Unchanged
+    [Documentation]
+    ...    Risk: tightening validation (previous tests) wrongly rejects legitimate extremes,
+    ...    or the database rounds a value so history no longer matches what the device sent.
+    ...    Expected: 201, and the stored value equals the sent value.
+    [Tags]    data_integrity    validation
+    [Template]    Accepted Value Is Stored Unchanged
+    temperature    -50
+    temperature    200
+    temperature    36.6
+    vibration      0
+    battery        0
+    battery        100
+    battery        33.3
+
+
 *** Keywords ***
 Post Raw Reading
     [Arguments]    ${device_id}    ${field}    ${value}
