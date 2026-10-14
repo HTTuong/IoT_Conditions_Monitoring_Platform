@@ -24,6 +24,17 @@ Whitespace-Only Device Name Is Rejected
     ${response}=    POST On Session    api    /devices    json=${body}    expected_status=any
     Should Be Equal As Integers    ${response.status_code}    422
 
+Padded Device Id Is Rejected Or Trimmed
+    [Documentation]
+    ...    Risk: " dev-1" and "dev-1" become two different devices that look identical to an
+    ...    operator, and telemetry for one never matches the other.
+    ...    Expected: either 422, or the stored id has no surrounding whitespace.
+    [Tags]    data_integrity    validation
+    [Template]    Padded Id Is Rejected Or Trimmed
+    1    0
+    0    1
+    2    2
+
 *** Keywords ***
 Padded Id Is Rejected Or Trimmed
     [Arguments]    ${lead}    ${trail}
