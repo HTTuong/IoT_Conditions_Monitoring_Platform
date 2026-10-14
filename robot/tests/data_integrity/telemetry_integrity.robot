@@ -55,6 +55,19 @@ Telemetry Timestamp Carries A Timezone And Is Current
     ${skew}=    Evaluate    abs((datetime.datetime.now(datetime.timezone.utc) - $parsed).total_seconds())    modules=datetime
     Should Be True    ${skew} < 60    Timestamp '${ts}' is ${skew}s away from now
 
+Telemetry From A Deactivated Device Does Not Reactivate It
+    [Documentation]
+    ...    Risk: a reading from a decommissioned device flips it back to active, undoing an
+    ...    operator's decision.
+    ...    Expected: the device stays inactive (the reading may be rejected or stored).
+    [Tags]    data_integrity    device
+    ${device_id}=    Register Fresh Device
+    PATCH On Session    api    /devices/${device_id}/deactivate
+    ${body}=    Create Dictionary    device_id=${device_id}    temperature=${40.0}
+    POST On Session    api    /telemetry    json=${body}    expected_status=any
+    ${device}=    GET On Session    api    /devices/${device_id}
+    Should Be Equal    ${device.json()}[status]    inactive
+
 
 *** Keywords ***
 Active Alert Types Of Device
