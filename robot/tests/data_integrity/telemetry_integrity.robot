@@ -24,6 +24,20 @@ Non-Finite Reading Does Not Clear An Open Alert
     ${after}=    Active Alert Types Of Device    ${device_id}
     Should Contain    ${after}    high_temperature
 
+Reading Without Temperature Does Not Clear An Open Alert
+    [Documentation]
+    ...    Risk: a reading that simply omits temperature (battery-only) is treated as "temperature
+    ...    is fine" and closes the alert. Control for the NaN test: absence is not normality.
+    ...    Expected: the high-temperature alert stays open.
+    [Tags]    data_integrity    alerts
+    ${device_id}=    Register Fresh Device
+    ${hot}=    Create Dictionary    device_id=${device_id}    temperature=${120.0}
+    POST On Session    api    /telemetry    json=${hot}
+    ${partial}=    Create Dictionary    device_id=${device_id}    battery=${80.0}
+    POST On Session    api    /telemetry    json=${partial}
+    ${types}=    Active Alert Types Of Device    ${device_id}
+    Should Contain    ${types}    high_temperature
+
 
 *** Keywords ***
 Active Alert Types Of Device
