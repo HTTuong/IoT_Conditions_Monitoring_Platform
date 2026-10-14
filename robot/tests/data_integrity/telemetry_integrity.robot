@@ -7,27 +7,29 @@ Suite Setup    Create API Session
 &{JSON_HEADERS}    Content-Type=application/json
 
 *** Test Cases ***
-Non-Finite Reading Does Not Clear An Open Alert
+Defect R-DI-03: NaN Reading Currently Closes An Open Alert
     [Documentation]
     ...    Risk: a NaN temperature compares as "not above threshold", so the backend treats it
     ...    as normal and silently resolves a genuine high-temperature alert.
-    ...    Expected: the alert is still open afterwards (the reading may be rejected or ignored,
-    ...    but must never close the alert).
-    [Tags]    data_integrity    alerts
+    ...    Expected (correct behaviour): the alert stays open. Not implemented yet.
+    ...    Automation: PINS the defect. Passes while the alert is closed by the NaN reading;
+    ...    fails with "looks FIXED" once it stays open.
+    [Tags]    data_integrity    alerts    R-DI-03
     ${device_id}=    Register Fresh Device
     ${hot}=    Create Dictionary    device_id=${device_id}    temperature=${120.0}
     POST On Session    api    /telemetry    json=${hot}
     ${before}=    Active Alert Types Of Device    ${device_id}
-    Should Contain    ${before}    high_temperature
+    Should Contain    ${before}    high_temperature    Precondition failed: the alert was never created
     ${raw}=    Set Variable    {"device_id": "${device_id}", "temperature": NaN}
     POST On Session    api    /telemetry    data=${raw}    headers=${JSON_HEADERS}    expected_status=any
     ${after}=    Active Alert Types Of Device    ${device_id}
-    Should Contain    ${after}    high_temperature
+    Should Not Contain    ${after}    high_temperature
+    ...    R-DI-03 looks FIXED: the alert survived the NaN reading. Flip this test to require it stays open.
 
 Reading Without Temperature Does Not Clear An Open Alert
     [Documentation]
     ...    Risk: a reading that simply omits temperature (battery-only) is treated as "temperature
-    ...    is fine" and closes the alert. Control for the NaN test: absence is not normality.
+    ...    is fine" and closes the alert. Control for R-DI-03: absence is not normality.
     ...    Expected: the high-temperature alert stays open.
     [Tags]    data_integrity    alerts
     ${device_id}=    Register Fresh Device
@@ -38,22 +40,28 @@ Reading Without Temperature Does Not Clear An Open Alert
     ${types}=    Active Alert Types Of Device    ${device_id}
     Should Contain    ${types}    high_temperature
 
-Telemetry Timestamp Carries A Timezone And Is Current
+Defect R-DI-04: Telemetry Timestamp Currently Has No Timezone Offset
     [Documentation]
     ...    Risk: timestamps serialized without a UTC marker are read as local time by browsers,
     ...    so the dashboard shows readings hours off from reality (3h in Finland).
-    ...    Expected: the timestamp has an explicit offset and is within 60 s of now (UTC).
-    [Tags]    data_integrity    time
+    ...    Expected (correct behaviour): an explicit offset (Z or +00:00). Not implemented yet.
+    ...    Automation: PINS the defect. Passes while the timestamp is naive AND equals UTC now
+    ...    (proof it is mislabeled); fails with "looks FIXED" once an offset is present.
+    [Tags]    data_integrity    time    R-DI-04
     ${device_id}=    Register Fresh Device
     ${body}=    Create Dictionary    device_id=${device_id}    battery=${80.0}
     POST On Session    api    /telemetry    json=${body}
     ${records}=    Get Telemetry    ${device_id}
     ${ts}=    Evaluate    $records.json()[0]['timestamp']
     ${parsed}=    Evaluate    datetime.datetime.fromisoformat($ts.replace('Z', '+00:00'))    modules=datetime
-    ${aware}=    Evaluate    $parsed.tzinfo is not None
-    Should Be True    ${aware}    Timestamp '${ts}' has no timezone offset
-    ${skew}=    Evaluate    abs((datetime.datetime.now(datetime.timezone.utc) - $parsed).total_seconds())    modules=datetime
-    Should Be True    ${skew} < 60    Timestamp '${ts}' is ${skew}s away from now
+    ${naive}=    Evaluate    $parsed.tzinfo is None
+    Should Be True    ${naive}
+    ...    R-DI-04 looks FIXED: timestamp '${ts}' now carries an offset. Flip this test to require one.
+    ${skew}=    Evaluate
+    ...    abs((datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None) - $parsed).total_seconds())
+    ...    modules=datetime
+    Should Be True    ${skew} < 60
+    ...    Timestamp '${ts}' is ${skew}s from UTC now, so the documented defect has changed shape.
 
 Telemetry From A Deactivated Device Does Not Reactivate It
     [Documentation]
@@ -67,7 +75,6 @@ Telemetry From A Deactivated Device Does Not Reactivate It
     POST On Session    api    /telemetry    json=${body}    expected_status=any
     ${device}=    GET On Session    api    /devices/${device_id}
     Should Be Equal    ${device.json()}[status]    inactive
-
 
 *** Keywords ***
 Active Alert Types Of Device
