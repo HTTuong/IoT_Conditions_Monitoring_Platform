@@ -14,6 +14,16 @@ Whitespace-Only Device Id Is Rejected
     ${response}=    POST On Session    api    /devices    json=${body}    expected_status=any
     Should Be Equal As Integers    ${response.status_code}    422
 
+Whitespace-Only Device Name Is Rejected
+    [Documentation]
+    ...    Risk: a blank name satisfies min_length=1 and shows as an empty cell on the dashboard.
+    ...    Expected: 422.
+    [Tags]    data_integrity    validation
+    ${token}=    Evaluate    uuid.uuid4().hex[:8]    modules=uuid
+    ${body}=    Create Dictionary    device_id=blank-${token}    name=${SPACE}${SPACE}
+    ${response}=    POST On Session    api    /devices    json=${body}    expected_status=any
+    Should Be Equal As Integers    ${response.status_code}    422
+
 *** Keywords ***
 Padded Id Is Rejected Or Trimmed
     [Arguments]    ${lead}    ${trail}
