@@ -7,6 +7,12 @@ services:
       - ./mosquitto/config:/mosquitto/config
       - ./mosquitto/data:/mosquitto/data
       - ./mosquitto/log:/mosquitto/log
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_sub -h localhost -t '$$SYS/#' -C 1 -W 5 -i healthcheck || exit 1"]
+      interval: 10s
+      timeout: 8s
+      retries: 5
+      start_period: 10s
 
   postgres:
     image: postgres:16-alpine
@@ -18,6 +24,52 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U iot_user -d iot_monitoring"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    profiles: ["app"]
+    build: ./services/backend
+    environment:
+      DATABASE_URL: postgresql://iot_user:iot_password@postgres:5432/iot_monitoring
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  gateway:
+    profiles: ["app"]
+    build: ./services/gateway
+    environment:
+      BROKER_HOST: mosquitto
+      BACKEND_URL: http://backend:8000
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+  simulator:
+    profiles: ["demo"]
+    build: ./services/simulator
+    environment:
+      BROKER_HOST: mosquitto
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    restart: unless-stopped
 
 volumes:
   postgres_data:

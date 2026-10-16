@@ -1,13 +1,14 @@
+import os
 import paho.mqtt.client as mqtt
 import json
 import time
 import requests
 from collections import deque
 
-BROKER_HOST = "localhost"
-BROKER_PORT = 1883
+BROKER_HOST = os.getenv("BROKER_HOST", "localhost")
+BROKER_PORT = int(os.getenv("BROKER_PORT", "1883"))
 SUBSCRIBE_TOPIC = "factory/#"
-BACKEND_URL = "http://localhost:8000"
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
 
 # Outcome of one forwarding attempt.
 OK = "ok"        # backend stored the reading (201)

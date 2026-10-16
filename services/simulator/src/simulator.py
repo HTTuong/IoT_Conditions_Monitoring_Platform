@@ -1,10 +1,11 @@
+import os
 import paho.mqtt.client as mqtt
 import json
 import random
 import time
 
-BROKER_HOST = "localhost"
-BROKER_PORT = 1883
+BROKER_HOST = os.getenv("BROKER_HOST", "localhost")
+BROKER_PORT = int(os.getenv("BROKER_PORT", "1883"))
 
 SENSORS = ["sensor-001"]
 
