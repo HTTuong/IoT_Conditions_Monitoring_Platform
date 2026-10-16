@@ -26,3 +26,4 @@ robot/output.xml
 robot/log.html
 robot/report.html
 robot/venv/
+k6/results/
