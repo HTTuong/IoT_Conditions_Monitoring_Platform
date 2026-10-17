@@ -9,3 +9,5 @@ ${DASHBOARD_URL}            ${API_BASE_URL}/dashboard/
 ${PROJECT_ROOT}      ${CURDIR}/../..
 ${BACKEND_PYTHON}    ${PROJECT_ROOT}/venv/bin/python
 ${GATEWAY_PYTHON}    ${PROJECT_ROOT}/venv/bin/python
+
+${SERVICE_MODE}    process
