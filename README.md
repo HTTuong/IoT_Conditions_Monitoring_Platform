@@ -1,6 +1,8 @@
-# Industrial Asset Condition Monitoring Platform
+# Industrial IoT Sensor Pipeline: Reliability Test Automation
 
 [![CI](https://github.com/HTTuong/Industrial_Asset_Monitoring_Platform/actions/workflows/ci.yml/badge.svg)](https://github.com/HTTuong/Industrial_Asset_Monitoring_Platform/actions/workflows/ci.yml)
+
+Test automation for a sensor-to-cloud condition monitoring system: 59 Robot Framework tests covering resilience, data integrity, security and concurrency, running in Docker and GitHub Actions.
 
 A simulated industrial IoT platform used to practice quality engineering for distributed, asynchronous systems. Sensors publish telemetry over MQTT, a resilient gateway forwards it to a backend that detects anomalies and raises alerts, and a Robot Framework suite of 59 tests checks the system across API, messaging, browser, failure-injection and concurrency layers.
 

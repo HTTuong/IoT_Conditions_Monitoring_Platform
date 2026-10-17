@@ -1,4 +1,4 @@
-# Risk Analysis - Industrial Asset Condition Monitoring Platform
+# Risk Analysis - Industrial IoT Sensor Pipeline
 
 ## Purpose
 

@@ -1,4 +1,4 @@
-# Architecture of the Industrial Asset Condition Monitoring Platform
+# Architecture - Industrial IoT Sensor Pipeline
 
 ## Purpose and scope
 

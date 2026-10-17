@@ -1,4 +1,4 @@
-# Test Strategy - Industrial Asset Condition Monitoring Platform
+# Test Strategy - Industrial IoT Sensor Pipeline
 
 ## Purpose
 
