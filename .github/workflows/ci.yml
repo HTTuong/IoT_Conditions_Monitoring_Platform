@@ -45,6 +45,14 @@ jobs:
             tests/anomaly_alert/high_temperature.robot \
             tests/anomaly_alert/threshold_boundary.robot \
             tests/anomaly_alert/alert_lifecycle.robot
+      
+      - name: Run resilience suites (container mode)
+        if: ${{ !cancelled() }}
+        working-directory: robot
+        run: |
+          robot -d results/ci-resilience \
+            --variable SERVICE_MODE:docker \
+            tests/resilience
 
       - name: Upload Robot reports
         if: always()
