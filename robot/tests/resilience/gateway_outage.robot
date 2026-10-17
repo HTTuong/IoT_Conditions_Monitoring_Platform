@@ -36,8 +36,8 @@ Gateway Crash With Buffered Readings Must Not Lose Them
     ...    gateway then crashes, those readings are gone for good, because the broker already
     ...    received the MQTT acknowledgement when the gateway first accepted them.
     ...    Expected: after the backend and the gateway are both back, all 3 readings are stored.
-    ...    Known to FAIL today: the buffer lives only in memory (see docs/risk-analysis.md).
-    [Tags]    resilience    gateway    known-bug
+    ...    Fixed (R-GW-01, see docs/risk-analysis.md): the gateway acknowledges an MQTT message only after the backend accepted it, so a reading that was only buffered in memory is redelivered by the broker after a restart.
+    [Tags]    resilience    gateway
     ${device_id}=    Register Fresh Device
     Stop Backend
     FOR    ${i}    IN RANGE    3

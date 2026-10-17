@@ -79,7 +79,7 @@ Last updated: 2026-10-17.
 | Anomaly / Alert | Automated (`tests/anomaly_alert/`, 14 tests: 13 pass, 1 red on purpose) | R-AL-01 (open) |
 | Security | XSS tests automated (`tests/security/xss_dashboard.robot`, 5 tests). API hardening tests (CORS, CSP, device id format) are planned and not written yet | R-SEC-01 (fix delivered, pending verification); R-SEC-02 (accepted) |
 | Data integrity | Automated (`tests/data_integrity/`, 13 tests, all pass; defects R-DI-01 to R-DI-06 are pinned) | R-DI-01 to R-DI-06 (open); R-DI-07 (fixed) |
-| Performance (k6) | Scripts written (`k6/lib/smoke.js`, `k6/lib/load_mix.js`), smoke output saved in `k6/results/smoke.txt`, load baseline not yet recorded | Candidate: `GET /alerts` has no filter or pagination (see Design observations) |
+| Performance (k6) | Scripts written (`k6/smoke.js`, `k6/load_mix.js`), no run recorded yet | Candidate: `GET /alerts` has no filter or pagination (see Design observations) |
 
 ---
 

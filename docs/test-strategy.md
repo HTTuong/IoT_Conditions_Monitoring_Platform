@@ -42,7 +42,7 @@ The robot suite contains 59 tests.
 | E. Anomaly and alert | `robot/tests/anomaly_alert/` | 14 | High temperature, threshold boundaries, alert lifecycle, concurrency | R-AL-01 | 13 of 14 (not `alert_concurrency.robot`) |
 | F. Security | `robot/tests/security/` | 5 | Stored XSS on the dashboard. API hardening tests (CORS, CSP, id format) are planned | R-SEC-01, R-SEC-02 | Not yet |
 | G. Data integrity | `robot/tests/data_integrity/` | 13 | Value ranges, non-finite numbers, timestamps, identity normalization, concurrent registration | R-DI-01 to R-DI-07 | Yes |
-| H. Performance | `k6/lib/` | 2 scripts | Smoke test, mixed load with ingest and dashboard readers | `GET /alerts` has no filter or pagination | Not yet |
+| H. Performance | `k6/` | 2 scripts | Smoke test, mixed load with ingest and dashboard readers | `GET /alerts` has no filter or pagination | Not yet |
 
 ## Techniques used
 
@@ -119,8 +119,8 @@ Deliberately not in CI, with the reason:
 
 ## Performance targets (k6)
 
-- `k6/lib/smoke.js`: a short run that proves the scenario works before any load is applied.
-- `k6/lib/load_mix.js`: an open model that ingests telemetry at a constant arrival rate (default 20 per second for 2 minutes) while a closed model of dashboard viewers (default 10) reads devices and alerts.
+- `k6/smoke.js`: a short run that proves the scenario works before any load is applied.
+- `k6/load_mix.js`: an open model that ingests telemetry at a constant arrival rate (default 20 per second for 2 minutes) while a closed model of dashboard viewers (default 10) reads devices and alerts.
 - Thresholds: failed requests below 1 percent, checks above 99 percent, no dropped iterations, p95 below 500 ms for telemetry posts and below 800 ms for reads. A run that breaks a threshold exits with code 99.
 - The open model matters: a closed model slows down when the system slows down and hides overload, while a constant arrival rate keeps pushing and shows `dropped_iterations`.
 
