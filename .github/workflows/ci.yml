@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  robot-docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare Mosquitto bind-mount directories
+        run: |
+          mkdir -p mosquitto/data mosquitto/log
+          chmod -R 777 mosquitto/data mosquitto/log
+
+      - name: Build and start the full stack
+        run: docker compose --profile app up -d --build --wait
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: robot/requirements.txt
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Robot Framework and the browser
+        working-directory: robot
+        run: |
+          pip install -r requirements.txt
+          rfbrowser init --with-deps chromium
+
+      - name: Run Robot Framework suites
+        working-directory: robot
+        run: |
+          robot -d results/ci \
+            --variable HEADLESS:True \
+            tests/device tests/mqtt tests/e2e tests/data_integrity \
+            tests/anomaly_alert/high_temperature.robot \
+            tests/anomaly_alert/threshold_boundary.robot \
+            tests/anomaly_alert/alert_lifecycle.robot
+
+      - name: Upload Robot reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: robot-results
+          path: robot/results/ci
+
+      - name: Show container logs on failure
+        if: failure()
+        run: docker compose --profile app logs --no-color --tail 200
+
+      - name: Stop the stack
+        if: always()
+        run: docker compose --profile app down -v

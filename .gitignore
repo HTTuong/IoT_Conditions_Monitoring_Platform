@@ -27,3 +27,4 @@ robot/log.html
 robot/report.html
 robot/venv/
 k6/results/
+.DS_Store
