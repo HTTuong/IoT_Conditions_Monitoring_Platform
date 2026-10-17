@@ -20,12 +20,12 @@ Gateway Survives A Hung Backend And Resumes Consuming After It Recovers
     ...    and the gateway keeps consuming new messages.
     [Tags]    resilience    gateway
     ${device_id}=    Register Fresh Device
-    Send Signal To Process    SIGSTOP    backend
+    Freeze Backend
     ${reading}=    Generate Normal Reading    temperature=${47.5}
     Publish Reading    ${device_id}    ${reading}
     Wait Until Keyword Succeeds    15s    1s    Gateway Log Should Contain    Buffered. Queue size: 1
-    Process Should Be Running    gateway
-    Send Signal To Process    SIGCONT    backend
+    Gateway Should Be Running
+    Unfreeze Backend
     Wait Until Keyword Succeeds    30s    2s    Telemetry Count Should Be At Least    ${device_id}    1
     ${sentinel}=    Generate Normal Reading    temperature=${55.5}
     Publish Reading    ${device_id}    ${sentinel}
@@ -38,7 +38,7 @@ Start Environment
     Start Gateway
 
 Stop Environment
-    Run Keyword And Ignore Error    Send Signal To Process    SIGCONT    backend
+    Run Keyword And Ignore Error    Unfreeze Backend
     Terminate All Processes    kill=${True}
     Disconnect From Broker
 

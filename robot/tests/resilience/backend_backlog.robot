@@ -35,7 +35,7 @@ Large Backlog Is Fully Drained In Order After Backend Recovery
     ${in_order}=    Evaluate    [r['temperature'] for r in sorted($response.json(), key=lambda r: r['id'])]
     ${expected}=    Evaluate    [20.0 + i * 0.5 for i in range(${BACKLOG_SIZE})]
     Should Be Equal    ${in_order}    ${expected}
-    Process Should Be Running    gateway
+    Gateway Should Be Running
 
 *** Keywords ***
 Start Environment
