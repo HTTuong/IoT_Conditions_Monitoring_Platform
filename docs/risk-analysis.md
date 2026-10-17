@@ -10,7 +10,7 @@ This document tracks quality risks identified in the system and how each one map
 
 This is a living document. The first entries below were identified through manual exploratory testing during development, before the Robot Framework test suite existed. Every later entry was found by an automated test, which is named in its "Found by" line.
 
-Last updated: 2026-10-14.
+Last updated: 2026-10-17.
 
 ## How to read test status
 
@@ -54,7 +54,7 @@ Last updated: 2026-10-14.
 
 **Expected behavior.** Telemetry published while the gateway is briefly offline should still be delivered once the gateway reconnects, up to the broker's queuing limits, matching how a real industrial gateway would be expected to behave, since sensors have no way of knowing the gateway is temporarily unreachable.
 
-**Resolution.** Configured the gateway with a persistent MQTT session (`clean_session=False` with a fixed `client_id`) and subscribed at QoS 1 (matching the QoS 1 the sensor simulator already publishes at). This instructs the broker to queue QoS ≥ 1 messages for the gateway while it is offline and deliver them on reconnect. Verified manually: stopping Mosquitto for ~20–30 seconds while the simulator continued publishing no longer resulted in missing rows in the `telemetry` table after reconnect.
+**Resolution.** Configured the gateway with a persistent MQTT session (`clean_session=False` with a fixed `client_id`) and subscribed at QoS 1 (matching the QoS 1 the sensor simulator already publishes at). This instructs the broker to queue QoS ≥ 1 messages for the gateway while it is offline and deliver them on reconnect. Verified manually: stopping Mosquitto for 20 to 30 seconds while the simulator continued publishing no longer resulted in missing rows in the `telemetry` table after reconnect.
 
 **Automation.** `tests/resilience/gateway_outage.robot` ("Readings Published While Gateway Is Offline Are Delivered After It Restarts") and `tests/resilience/broker_restart.robot`.
 
@@ -72,14 +72,14 @@ Last updated: 2026-10-14.
 
 | Test group | Status | Risk entries |
 |---|---|---|
-| Device management | Automated (`tests/device/`) | No open risks recorded |
-| MQTT telemetry validation | Automated (`tests/mqtt/`) | No open risks recorded |
-| End-to-end | Automated (`tests/e2e/`: full pipeline and dashboard UI) | No open risks recorded |
+| Device management | Automated (`tests/device/`, 7 tests) | No open risks recorded |
+| MQTT telemetry validation | Automated (`tests/mqtt/`, 11 tests, covering ingestion from the broker through the gateway into the backend) | No open risks recorded |
+| End-to-end | Automated (`tests/e2e/dashboard_ui.robot`, 2 browser tests) | No open risks recorded |
 | **Resilience** | Automated (`tests/resilience/`, 7 tests, all pass) | R-GW-01, R-GW-02, R-GW-03 (fixed); R-GW-04, R-GW-05 (open) |
 | Anomaly / Alert | Automated (`tests/anomaly_alert/`, 14 tests: 13 pass, 1 red on purpose) | R-AL-01 (open) |
-| Security | XSS tests automated (`tests/security/xss_dashboard.robot`); API hardening tests written but not yet run (`tests/security/api_hardening.robot`) | R-SEC-01 (fix delivered, pending verification); R-SEC-02 (accepted) |
+| Security | XSS tests automated (`tests/security/xss_dashboard.robot`, 5 tests). API hardening tests (CORS, CSP, device id format) are planned and not written yet | R-SEC-01 (fix delivered, pending verification); R-SEC-02 (accepted) |
 | Data integrity | Automated (`tests/data_integrity/`, 13 tests, all pass; defects R-DI-01 to R-DI-06 are pinned) | R-DI-01 to R-DI-06 (open); R-DI-07 (fixed) |
-| Performance (k6) | Not started | Candidate: `GET /alerts` has no filter or pagination (see Design observations) |
+| Performance (k6) | Scripts written (`k6/lib/smoke.js`, `k6/lib/load_mix.js`), smoke output saved in `k6/results/smoke.txt`, load baseline not yet recorded | Candidate: `GET /alerts` has no filter or pagination (see Design observations) |
 
 ---
 
@@ -88,7 +88,7 @@ Last updated: 2026-10-14.
 ### R-GW-01: Readings buffered in the gateway are lost if the gateway crashes
 
 - **Severity:** High (silent data loss, no alert)
-- **Found by:** `tests/resilience/gateway_outage.robot` — "Gateway Crash With Buffered Readings Must Not Lose Them"
+- **Found by:** `tests/resilience/gateway_outage.robot`, test "Gateway Crash With Buffered Readings Must Not Lose Them"
 - **Scenario:** The backend is down, the gateway buffers 3 readings in its in-memory `deque`, then the gateway process dies and is restarted after the backend is back.
 - **Observed (before the fix):** 0 of 3 readings are stored.
 - **Root cause:** `gateway.py` accepted the MQTT message (paho acknowledges QoS 1 as soon as `on_message` returns) before the backend had accepted the reading. The broker therefore considered it delivered, and the only remaining copy was in process memory.
@@ -99,7 +99,7 @@ Last updated: 2026-10-14.
 ### R-GW-02: A permanently rejected reading blocks every reading buffered behind it
 
 - **Severity:** High (data loss after any transient outage, plus an endless retry loop)
-- **Found by:** `tests/resilience/poison_message.robot` — "Rejected Reading Must Not Block Valid Readings Buffered Behind It"
+- **Found by:** `tests/resilience/poison_message.robot`, test "Rejected Reading Must Not Block Valid Readings Buffered Behind It"
 - **Scenario:** The backend rejects one reading with 422 (temperature 999). The gateway buffers it. The backend then goes down briefly, a valid reading is buffered behind the rejected one. The backend recovers.
 - **Observed (before the fix):** 0 of 1 valid readings stored. The gateway retries the rejected reading every 5 s forever.
 - **Root cause:** `forward_to_backend` returned `False` for any non-201 status, so a 4xx (permanent client error) was treated like a connection error (transient). The retry loop only ever looks at the head of the queue, so one permanent failure stalls the whole queue.
@@ -110,7 +110,7 @@ Last updated: 2026-10-14.
 ### R-GW-03: A hung backend kills the gateway's MQTT thread (silent zombie gateway)
 
 - **Severity:** Critical (all ingestion stops, no error surfaced, process still looks healthy)
-- **Found by:** `tests/resilience/backend_hang.robot` — "Gateway Survives A Hung Backend And Delivers After It Recovers"
+- **Found by:** `tests/resilience/backend_hang.robot`, test "Gateway Survives A Hung Backend And Delivers After It Recovers"
 - **Scenario:** The backend accepts the TCP connection but does not answer (frozen process, overloaded, deadlocked). Simulated with SIGSTOP.
 - **Observed (before the fix):** `requests.exceptions.ReadTimeout` is raised inside `on_message`, the paho network thread (`paho-mqtt-client-gateway-1`) terminates. The gateway process stays alive but no longer consumes MQTT messages and never reconnects.
 - **Root cause:** `forward_to_backend` only caught `requests.exceptions.ConnectionError`. A read timeout is a different exception, and an uncaught exception in a paho callback ends its thread.
@@ -152,18 +152,18 @@ Last updated: 2026-10-14.
 ### R-SEC-01: Stored XSS in the dashboard
 
 - **Severity:** High (any party that can register a device can run script in an operator's browser)
-- **Found by:** `tests/security/xss_dashboard.robot` — "Markup In Device Name Is Displayed As Text, Not Parsed", "Markup In Device Id Is Displayed As Text, Not Parsed" and "Script In Device Name Does Not Execute". Two control tests (plain name, device id from the URL on the detail page) pass.
+- **Found by:** `tests/security/xss_dashboard.robot`, tests "Markup In Device Name Is Displayed As Text, Not Parsed", "Markup In Device Id Is Displayed As Text, Not Parsed" and "Script In Device Name Does Not Execute". Two control tests (plain name, device id from the URL on the detail page) pass.
 - **Observed:** A device name of `<b>…</b>` was rendered as bold HTML instead of text, and a script payload in a device name executed (the page title became `XSS-EXECUTED`).
 - **Root cause:** `dashboard.js` built table rows with `innerHTML` and unescaped values (`device_id`, `name`, `status`, alert fields). `device-detail.js` did the same for telemetry and alert rows. The API accepts any characters in `device_id` and `name`.
 - **Fix delivered:** Build cells with `createElement` and `textContent` in `dashboard.js` and `device-detail.js`, and use `encodeURIComponent` for the device link and the telemetry URL.
-- **Remaining work:** Restrict the `device_id` format in the API and add a Content-Security-Policy header. Both are covered by `tests/security/api_hardening.robot` (not yet run).
+- **Remaining work:** Restrict the `device_id` format in the API and add a Content-Security-Policy header. Tests for both are planned in a new `tests/security/api_hardening.robot`, which does not exist yet.
 - **Status:** Open until `xss_dashboard.robot` is re-run and passes 5 of 5, then mark as Fixed in the UI.
 
 ### R-SEC-02: No authentication or authorization on any endpoint
 
 - **Severity:** High in production, accepted for this portfolio project
 - **Details:** Every endpoint, including device registration and deactivation, is open, and CORS allows any origin (`allow_origins=["*"]`). Anyone who can reach the API can create devices, post telemetry or deactivate devices.
-- **Planned coverage:** The CORS and CSP checks in `tests/security/api_hardening.robot` document the current behavior once that file is run.
+- **Planned coverage:** A test that pins the current CORS behavior (any origin allowed) is planned in `tests/security/api_hardening.robot`, which does not exist yet.
 - **Status:** Accepted risk, out of scope. A production version would need API keys or JWT, role checks and a restricted CORS origin list.
 
 ## Data integrity
@@ -171,7 +171,7 @@ Last updated: 2026-10-14.
 ### R-DI-01: Battery level has no range check
 
 - **Severity:** Medium (impossible values stored and displayed)
-- **Found by:** `tests/data_integrity/telemetry_values.robot` — "Defect R-DI-01: Out Of Range Battery Is Currently Accepted"
+- **Found by:** `tests/data_integrity/telemetry_values.robot`, test "Defect R-DI-01: Out Of Range Battery Is Currently Accepted"
 - **Observed:** `battery` 101 and -1 both return 201 and are stored unchanged.
 - **Root cause:** `TelemetryCreate` validates `temperature` and `vibration` but not `battery`.
 - **Suggested fix:** `battery: Optional[float] = Field(default=None, ge=0, le=100)`.
@@ -180,7 +180,7 @@ Last updated: 2026-10-14.
 ### R-DI-02: NaN and Infinity are accepted, and infinite temperature crashes the error response
 
 - **Severity:** Medium (corrupt rows stored, and a 500 instead of a clean 422)
-- **Found by:** `tests/data_integrity/telemetry_values.robot` — "Defect R-DI-02: Non-Finite Numbers Are Currently Accepted" and "Defect R-DI-02: Infinite Temperature Currently Crashes With 500"
+- **Found by:** `tests/data_integrity/telemetry_values.robot`, tests "Defect R-DI-02: Non-Finite Numbers Are Currently Accepted" and "Defect R-DI-02: Infinite Temperature Currently Crashes With 500"
 - **Observed:** `temperature` NaN, `vibration` NaN and Infinity, and `battery` NaN and Infinity all return 201. `temperature` Infinity returns 500.
 - **Root cause:** Every comparison with NaN is false, so the range validators let it through, and `vibration` and `battery` have no upper bound. For `temperature` Infinity the validator does reject the value, but FastAPI echoes the non-finite input in the 422 body and the JSON encoder cannot encode it.
 - **Suggested fix:** `allow_inf_nan=False` on the three numeric fields, and a custom `RequestValidationError` handler that drops the echoed `input` from the error body.
@@ -189,7 +189,7 @@ Last updated: 2026-10-14.
 ### R-DI-03: A NaN temperature closes an open high-temperature alert
 
 - **Severity:** High (a genuine overheating alert is silently closed)
-- **Found by:** `tests/data_integrity/telemetry_integrity.robot` — "Defect R-DI-03: NaN Reading Currently Closes An Open Alert"
+- **Found by:** `tests/data_integrity/telemetry_integrity.robot`, test "Defect R-DI-03: NaN Reading Currently Closes An Open Alert"
 - **Scenario:** A device has an open `high_temperature` alert (reading 120.0). A reading with `"temperature": NaN` arrives.
 - **Observed:** The alert is resolved. The control test (a battery-only reading) leaves the alert open, because `detect_anomaly` only evaluates metrics that are present.
 - **Root cause:** `NaN > threshold` is false, so `detect_anomaly` lists the temperature as normal and `resolve_alerts_for_type` closes the alert.
@@ -199,7 +199,7 @@ Last updated: 2026-10-14.
 ### R-DI-04: Timestamps carry no timezone offset
 
 - **Severity:** Medium (times shown on the dashboard are wrong by the viewer's UTC offset, 3 hours in Finland)
-- **Found by:** `tests/data_integrity/telemetry_integrity.robot` — "Defect R-DI-04: Telemetry Timestamp Currently Has No Timezone Offset"
+- **Found by:** `tests/data_integrity/telemetry_integrity.robot`, test "Defect R-DI-04: Telemetry Timestamp Currently Has No Timezone Offset"
 - **Observed:** The API returns `2026-10-14T19:23:27.536080`, which is UTC but carries no offset, so browsers read it as local time. By the same code path, device and alert `created_at` have the same problem (read from the code, not tested).
 - **Root cause:** Columns use `datetime.utcnow` (naive) and the response schemas serialize the naive value as is.
 - **Suggested fix:** Serialize with an explicit UTC offset in the response schemas (a `field_serializer`), or store timezone-aware datetimes.
@@ -208,7 +208,7 @@ Last updated: 2026-10-14.
 ### R-DI-05: Device identity fields are not normalized
 
 - **Severity:** Low to Medium (look-alike duplicate devices, blank entries)
-- **Found by:** `tests/data_integrity/device_identity.robot` — "Defect R-DI-05: Whitespace-Only Device Id Is Currently Not Rejected", "Whitespace-Only Device Name Is Currently Accepted" and "Padded Device Id Is Currently Stored Untrimmed"
+- **Found by:** `tests/data_integrity/device_identity.robot`, tests "Defect R-DI-05: Whitespace-Only Device Id Is Currently Not Rejected", "Whitespace-Only Device Name Is Currently Accepted" and "Padded Device Id Is Currently Stored Untrimmed"
 - **Observed:** A whitespace-only name returns 201. An id with leading or trailing spaces is stored exactly as sent, so `" dev-1"` and `"dev-1"` are different devices. A whitespace-only id (3 spaces) returned 500; the cause has not been diagnosed, so that test only asserts the response is not 422.
 - **Root cause:** `min_length` counts whitespace and nothing trims the input.
 - **Suggested fix:** `model_config = ConfigDict(str_strip_whitespace=True)` on `DeviceCreate` and `TelemetryCreate`. Diagnose the 500 from the backend log.
@@ -217,7 +217,7 @@ Last updated: 2026-10-14.
 ### R-DI-06: Concurrent registration of one device id returns 500
 
 - **Severity:** Low (no duplicate data, but a misleading error)
-- **Found by:** `tests/data_integrity/device_identity.robot` — "Defect R-DI-06: Concurrent Registrations Of One Id Currently Produce 500s"
+- **Found by:** `tests/data_integrity/device_identity.robot`, test "Defect R-DI-06: Concurrent Registrations Of One Id Currently Produce 500s"
 - **Observed:** In one round of 10 simultaneous requests: one 201, six 409 and three 500. Every round creates exactly one device.
 - **Root cause:** Registration is check-then-insert. The unique constraint on `devices.device_id` prevents duplicates, but the `IntegrityError` it raises is not handled.
 - **Suggested fix:** Catch `IntegrityError` around the commit in `register_device`, roll back and answer 409.
@@ -226,7 +226,7 @@ Last updated: 2026-10-14.
 ### R-DI-07: A reading with no measurements was stored as a row of nulls
 
 - **Severity:** Medium (history polluted, a silent device looks active)
-- **Found by:** `tests/data_integrity/telemetry_validation.robot` — "Telemetry Without Any Measurement Is Rejected"
+- **Found by:** `tests/data_integrity/telemetry_validation.robot`, test "Telemetry Without Any Measurement Is Rejected"
 - **Observed (before the fix):** 201 instead of 422, and a row with every measurement null.
 - **Fix applied:** A `model_validator` on `TelemetryCreate` requires at least one measurement.
 - **Status:** Fixed. The test passes.
