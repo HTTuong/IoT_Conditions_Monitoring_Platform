@@ -54,12 +54,12 @@ jobs:
             --variable SERVICE_MODE:docker \
             tests/resilience
 
-      - name: Upload Robot reports
+        - name: Upload Robot reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: robot-results
-          path: robot/results/ci
+          path: robot/results
 
       - name: Show container logs on failure
         if: failure()
